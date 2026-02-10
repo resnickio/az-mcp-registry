@@ -1,0 +1,43 @@
+<policies>
+    <inbound>
+        <base />
+
+        <!-- 1. Validate the user's Entra ID JWT -->
+        <validate-jwt header-name="Authorization" failed-validation-httpcode="401"
+                      failed-validation-error-message="Unauthorized. Valid Entra ID token required.">
+            <openid-config url="{{entra-openid-config-url}}" />
+            <audiences>
+                <audience>https://azure-apicenter.net</audience>
+            </audiences>
+            <required-claims>
+                <claim name="oid" match="any" />
+            </required-claims>
+        </validate-jwt>
+
+        <!-- 2. Extract user claims for logging and rate limiting -->
+        <set-variable name="caller-oid" value="@(context.Request.Headers.GetValueOrDefault(&quot;Authorization&quot;,&quot;&quot;).Split(' ').Last().AsJwt()?.Claims.GetValueOrDefault(&quot;oid&quot;,&quot;unknown&quot;))" />
+        <set-variable name="caller-upn" value="@(context.Request.Headers.GetValueOrDefault(&quot;Authorization&quot;,&quot;&quot;).Split(' ').Last().AsJwt()?.Claims.GetValueOrDefault(&quot;preferred_username&quot;,&quot;unknown&quot;))" />
+
+        <!-- 3. Rate limit: 60 requests per minute per user -->
+        <rate-limit-by-key calls="60" renewal-period="60"
+                           counter-key="@(context.Variables.GetValueOrDefault&lt;string&gt;(&quot;caller-oid&quot;))" />
+
+        <!-- 4. Replace user token with managed identity token for backend -->
+        <authentication-managed-identity resource="https://azure-apicenter.net" />
+
+        <!-- 5. Route to API Center data plane -->
+        <set-backend-service base-url="{{api-center-backend-url}}" />
+    </inbound>
+
+    <backend>
+        <base />
+    </backend>
+
+    <outbound>
+        <base />
+    </outbound>
+
+    <on-error>
+        <base />
+    </on-error>
+</policies>
