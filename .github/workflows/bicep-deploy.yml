@@ -49,9 +49,13 @@ jobs:
             --parameters parameters/main.bicepparam \
             --action-on-unmanage deleteResources \
             --deny-settings-mode denyWriteAndDelete \
+            --deny-settings-excluded-actions "Microsoft.ApiCenter/services/write" \
             --yes
 
       - name: Post-deploy — Disable anonymous access
+        env:
+          AZURE_SUBSCRIPTION_ID: ${{ vars.AZURE_SUBSCRIPTION_ID }}
+          API_CENTER_NAME: ${{ vars.API_CENTER_NAME }}
         run: |
           chmod +x scripts/post-deploy.sh
           ./scripts/post-deploy.sh
