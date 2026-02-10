@@ -96,7 +96,7 @@ az identity show --name <identity-name> --resource-group <rg> --query principalI
 
 MCP clients point to the **APIM gateway URL**, not the API Center data plane directly.
 
-Developers who want to browse the catalog can use the **API Center portal**: `https://portal.<api-center-name>.data.<region>.azure-apicenter.ms`
+Developers who want to browse the catalog can use the **API Center portal**: `https://<api-center-name>.portal.<region>.azure-apicenter.ms`
 
 In VS Code `settings.json`:
 ```json

@@ -40,7 +40,7 @@ This deployment creates the following resources. Names are derived from `apiCent
 
 **APIM gateway URL (MCP clients use this):** `https://<apim-name>.azure-api.net`
 **MCP Registry URL (via APIM):** `https://<apim-name>.azure-api.net/workspaces/default/v0.1/servers`
-**API Center portal (human-browsable catalog):** `https://portal.<api-center-name>.data.<region>.azure-apicenter.ms`
+**API Center portal (human-browsable catalog):** `https://<api-center-name>.portal.<region>.azure-apicenter.ms`
 **API Center data plane (backend, not exposed to clients):** `https://<api-center-name>.data.<region>.azure-apicenter.ms`
 
 ## Repository structure
