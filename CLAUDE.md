@@ -39,8 +39,9 @@ This deployment creates the following resources. Names are derived from `apiCent
 **Note:** API Center is only available in a subset of Azure regions (Australia East, Canada Central, Central India, East US, France Central, Sweden Central, UK South, West Europe). If your resource group region is not in this list, API Center (and co-located resources like APIM) must be deployed to a supported region. The parameter file controls the API Center location separately.
 
 **APIM gateway URL (MCP clients use this):** `https://<apim-name>.azure-api.net`
-**API Center data plane (backend, not exposed to clients):** `https://<api-center-name>.data.<region>.azure-apicenter.ms`
 **MCP Registry URL (via APIM):** `https://<apim-name>.azure-api.net/workspaces/default/v0.1/servers`
+**API Center portal (human-browsable catalog):** `https://portal.<api-center-name>.data.<region>.azure-apicenter.ms`
+**API Center data plane (backend, not exposed to clients):** `https://<api-center-name>.data.<region>.azure-apicenter.ms`
 
 ## Repository structure
 

@@ -125,6 +125,15 @@ This is a **hybrid auth pattern**: the user's JWT is validated by APIM for ident
     └── bicep-deploy.yml               # Merge: Deployment Stack deploy
 ```
 
+## Endpoints
+
+| Endpoint | URL | Purpose |
+|---|---|---|
+| **APIM gateway** (MCP allowlist) | `https://<apim-name>.azure-api.net` | Configure in GitHub Copilot org settings and VS Code MCP registry config. Machine-readable endpoint for MCP client discovery. |
+| **MCP Registry path** | `https://<apim-name>.azure-api.net/workspaces/default/v0.1/servers` | Full path for the MCP Registry v0.1 server list. |
+| **API Center portal** (catalog) | `https://portal.<api-center-name>.data.<region>.azure-apicenter.ms` | Human-browsable catalog where developers can discover registered MCP servers, view metadata, and find endpoint URLs. |
+| **API Center data plane** (backend) | `https://<api-center-name>.data.<region>.azure-apicenter.ms` | Not exposed to clients — APIM calls this using its managed identity. |
+
 ## Key design decisions
 
 1. **API version `2024-03-01` (GA)** — pinned for stability. Preview features (`apiSources`) not used.
