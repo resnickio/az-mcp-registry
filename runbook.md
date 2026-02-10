@@ -209,6 +209,8 @@ API Center is a regional service with no built-in geo-replication. Recovery stra
 | "RoleAssignmentExists" on deploy | Manual role assignment conflicts with Bicep deterministic GUID | Delete the manual assignment (`az role assignment delete --ids ...`) and redeploy |
 | "Too many characters in character literal" in APIM policy | C# strings in policy XML using single quotes instead of `&quot;` | Use `&quot;` for C# string literals inside XML attribute values |
 | LAW location conflict on deploy | Log Analytics workspace exists in different region than specified | Ensure `logAnalyticsLocation` matches the existing LAW region (resource group region) |
+| "Name already taken" on fresh deploy | API Center or APIM name reserved after deletion | Use a different name or wait for reservation to expire; for APIM, purge soft-deleted instance first via `az rest --method delete --url ".../deletedservices/{name}?api-version=2022-08-01"` |
+| `DenyAssignmentAuthorizationFailed` on post-deploy | Deployment Stack deny settings blocking API Center write | Redeploy stack with `--deny-settings-excluded-actions "Microsoft.ApiCenter/services/write"` |
 
 ## Application Insights KQL queries
 

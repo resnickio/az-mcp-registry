@@ -53,7 +53,8 @@ az stack group create \
   --template-file main.bicep \
   --parameters parameters/main.bicepparam \
   --action-on-unmanage deleteResources \
-  --deny-settings-mode denyWriteAndDelete
+  --deny-settings-mode denyWriteAndDelete \
+  --deny-settings-excluded-actions "Microsoft.ApiCenter/services/write"
 
 # Post-deployment: disable anonymous access (not configurable via Bicep)
 export API_CENTER_NAME="<your-api-center-name>"  # Must match apiCenterName in your parameter file

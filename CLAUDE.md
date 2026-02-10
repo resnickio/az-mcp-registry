@@ -213,6 +213,9 @@ API Center emits these events for automation:
 - **APIM policy XML C# string escaping**: C# expressions in APIM policy XML (inside `@(...)`) must use `&quot;` for string literals, not raw `"` or single quotes `'`. Raw `"` breaks XML parsing; single quotes `'` are C# `char` literals and cause "Too many characters in character literal" errors. Example: `GetValueOrDefault(&quot;Authorization&quot;,&quot;&quot;)`.
 - **Manual role assignments conflict with Bicep**: If a role assignment (same principal + role + scope) was created manually in the portal, Bicep will fail with `RoleAssignmentExists` because the manually-assigned GUID differs from the deterministic `guid()` computed by Bicep. Fix: delete the manual assignment first so Bicep can recreate it with a deterministic name.
 - **Log Analytics Workspace location**: The LAW may be in a different region than APIM and App Insights if the resource group region differs from the API Center region. The diagnostics module uses separate `location` and `logAnalyticsLocation` parameters to handle this split.
+- **API Center and APIM name reservation after deletion**: Azure reserves globally-unique resource names (API Center, APIM) for a period after deletion. Redeploying with the same name will fail with "name already taken." Use a different name or wait for the reservation to expire. APIM also has a soft-delete mechanism — purge a soft-deleted APIM instance via `az rest --method delete --url ".../deletedservices/{name}?api-version=2022-08-01"` before reusing the name.
+- **Deployment Stack deny settings vs post-deploy script**: The `denyWriteAndDelete` deny settings block the post-deployment `az rest --method patch` that disables anonymous access on API Center. The deploy command must include `--deny-settings-excluded-actions "Microsoft.ApiCenter/services/write"` to allow this operation.
+- **Anonymous access GET verification unreliable**: The API Center GET response on `api-version=2024-03-01` does not return the `anonymousAccess` property. The post-deploy script relies on the PATCH exit code (`set -e`) rather than a read-back check.
 
 ## Environment variables for local development
 
@@ -250,7 +253,8 @@ az stack group create \
   --template-file main.bicep \
   --parameters parameters/main.bicepparam \
   --action-on-unmanage deleteResources \
-  --deny-settings-mode denyWriteAndDelete
+  --deny-settings-mode denyWriteAndDelete \
+  --deny-settings-excluded-actions "Microsoft.ApiCenter/services/write"
 
 # Disable anonymous access (post-deployment)
 az rest --method patch \
