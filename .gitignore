@@ -1,0 +1,21 @@
+# Compiled ARM templates
+*.json
+!bicepconfig.json
+
+# Azure deployment state
+.azure/
+
+# Editor directories
+.vscode/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Parameter files (contain tenant IDs, emails, principal IDs)
+*.bicepparam
+!*.bicepparam.example
+
+# Secrets
+*.env
+.env.*
