@@ -62,7 +62,7 @@ resource apimLogger 'Microsoft.ApiManagement/service/loggers@2024-05-01' = {
   properties: {
     loggerType: 'applicationInsights'
     credentials: {
-      instrumentationKey: appInsights.properties.InstrumentationKey
+      connectionString: appInsights.properties.ConnectionString
     }
     resourceId: appInsights.id
   }

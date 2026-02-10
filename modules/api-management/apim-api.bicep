@@ -14,6 +14,12 @@ param apiCenterDataPlaneUrl string
 @description('Entra ID OpenID Connect configuration URL for JWT validation')
 param openidConfigUrl string
 
+@description('Entra ID token issuer URL for JWT validation (e.g. https://login.microsoftonline.com/{tenantId}/v2.0)')
+param entraTokenIssuer string
+
+@description('Object ID of the Entra ID security group required for registry access')
+param readerGroupObjectId string
+
 resource apimService 'Microsoft.ApiManagement/service@2024-05-01' existing = {
   name: apimName
 }
@@ -36,6 +42,26 @@ resource openidConfigUrlNamedValue 'Microsoft.ApiManagement/service/namedValues@
   properties: {
     displayName: 'entra-openid-config-url'
     value: openidConfigUrl
+    secret: false
+  }
+}
+
+resource tokenIssuerNamedValue 'Microsoft.ApiManagement/service/namedValues@2024-05-01' = {
+  name: 'entra-token-issuer'
+  parent: apimService
+  properties: {
+    displayName: 'entra-token-issuer'
+    value: entraTokenIssuer
+    secret: false
+  }
+}
+
+resource readerGroupNamedValue 'Microsoft.ApiManagement/service/namedValues@2024-05-01' = {
+  name: 'reader-group-object-id'
+  parent: apimService
+  properties: {
+    displayName: 'reader-group-object-id'
+    value: readerGroupObjectId
     secret: false
   }
 }
@@ -82,13 +108,13 @@ resource getServers 'Microsoft.ApiManagement/service/apis/operations@2024-05-01'
   }
 }
 
-resource getServersWildcard 'Microsoft.ApiManagement/service/apis/operations@2024-05-01' = {
-  name: 'get-wildcard'
+resource getRegistryWildcard 'Microsoft.ApiManagement/service/apis/operations@2024-05-01' = {
+  name: 'get-registry-wildcard'
   parent: mcpRegistryApi
   properties: {
-    displayName: 'GET (wildcard)'
+    displayName: 'GET Registry (wildcard)'
     method: 'GET'
-    urlTemplate: '/*'
+    urlTemplate: '/workspaces/default/v0.1/*'
   }
 }
 
@@ -104,5 +130,7 @@ resource apiPolicy 'Microsoft.ApiManagement/service/apis/policies@2024-05-01' = 
   dependsOn: [
     backendUrlNamedValue
     openidConfigUrlNamedValue
+    tokenIssuerNamedValue
+    readerGroupNamedValue
   ]
 }

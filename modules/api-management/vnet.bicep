@@ -104,6 +104,19 @@ resource nsg 'Microsoft.Network/networkSecurityGroups@2024-05-01' = {
         }
       }
       {
+        name: 'Allow-AzureKeyVault-Outbound'
+        properties: {
+          priority: 125
+          direction: 'Outbound'
+          access: 'Allow'
+          protocol: 'Tcp'
+          sourceAddressPrefix: 'VirtualNetwork'
+          sourcePortRange: '*'
+          destinationAddressPrefix: 'AzureKeyVault'
+          destinationPortRange: '443'
+        }
+      }
+      {
         name: 'Allow-Internet-Outbound'
         properties: {
           priority: 130
@@ -138,6 +151,12 @@ resource vnet 'Microsoft.Network/virtualNetworks@2024-05-01' = {
           networkSecurityGroup: {
             id: nsg.id
           }
+          serviceEndpoints: [
+            { service: 'Microsoft.Storage' }
+            { service: 'Microsoft.Sql' }
+            { service: 'Microsoft.EventHub' }
+            { service: 'Microsoft.KeyVault' }
+          ]
         }
       }
     ]

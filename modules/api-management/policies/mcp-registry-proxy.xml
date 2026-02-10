@@ -4,13 +4,21 @@
 
         <!-- 1. Validate the user's Entra ID JWT -->
         <validate-jwt header-name="Authorization" failed-validation-httpcode="401"
-                      failed-validation-error-message="Unauthorized. Valid Entra ID token required.">
+                      failed-validation-error-message="Unauthorized. Valid Entra ID token required."
+                      require-expiration-time="true"
+                      require-signed-tokens="true">
             <openid-config url="{{entra-openid-config-url}}" />
             <audiences>
                 <audience>https://azure-apicenter.net</audience>
             </audiences>
+            <issuers>
+                <issuer>{{entra-token-issuer}}</issuer>
+            </issuers>
             <required-claims>
                 <claim name="oid" match="any" />
+                <claim name="groups" match="any">
+                    <value>{{reader-group-object-id}}</value>
+                </claim>
             </required-claims>
         </validate-jwt>
 
@@ -39,5 +47,24 @@
 
     <on-error>
         <base />
+        <return-response>
+            <set-status code="@(context.Response != null ? context.Response.StatusCode : 500)" />
+            <set-header name="Content-Type" exists-action="override">
+                <value>application/json</value>
+            </set-header>
+            <set-body>@{
+                var statusCode = context.Response != null ? context.Response.StatusCode : 500;
+                var message = statusCode == 401 ? "Unauthorized" :
+                              statusCode == 403 ? "Forbidden" :
+                              statusCode == 429 ? "Rate limit exceeded" :
+                              "An internal error occurred";
+                return new JObject(
+                    new JProperty("error", new JObject(
+                        new JProperty("code", statusCode),
+                        new JProperty("message", message)
+                    ))
+                ).ToString();
+            }</set-body>
+        </return-response>
     </on-error>
 </policies>
