@@ -29,6 +29,18 @@
         },
         "simplify-interpolation": {
           "level": "error"
+        },
+        "outputs-should-not-contain-secrets": {
+          "level": "error"
+        },
+        "secure-secrets-in-params": {
+          "level": "error"
+        },
+        "use-resource-id-functions": {
+          "level": "error"
+        },
+        "no-deployments-resources": {
+          "level": "error"
         }
       }
     }

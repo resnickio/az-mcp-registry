@@ -16,3 +16,10 @@ param tags = {
   env: 'dev'
   project: 'mcp-registry'
 }
+
+// Optional parameters (uncomment and customize if needed):
+// param adminPrincipalIds = ['<service-principal-object-id>']
+// param vnetName = '<custom-vnet-name>'          // Default: ${apiCenterName}-vnet
+// param apimName = '<custom-apim-name>'          // Default: ${apiCenterName}-apim
+// param appInsightsName = '<custom-appi-name>'   // Default: ${apiCenterName}-appi
+// param logAnalyticsName = '<custom-law-name>'   // Default: ${apiCenterName}-law

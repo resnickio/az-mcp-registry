@@ -26,9 +26,9 @@ targetScope = 'resourceGroup'
 ])
 param apiCenterLocation string
 
-@description('API Center service name (3-90 chars, alphanumeric + hyphens)')
+@description('API Center service name (3-45 chars, alphanumeric + hyphens). Kept ≤45 so derived names (e.g. {name}-apim) stay within Azure limits.')
 @minLength(3)
-@maxLength(90)
+@maxLength(45)
 param apiCenterName string
 
 @description('Object ID of the Entra ID security group for end-user MCP registry access')
@@ -44,12 +44,16 @@ param apimPublisherEmail string
 param apimPublisherName string
 
 @description('Entra ID tenant ID for JWT validation in APIM policies')
+@minLength(36)
+@maxLength(36)
 param tenantId string
 
 @description('VNet name for APIM subnet')
 param vnetName string = '${apiCenterName}-vnet'
 
 @description('APIM instance name (3-50 chars)')
+@minLength(3)
+@maxLength(50)
 param apimName string = '${apiCenterName}-apim'
 
 @description('Application Insights name')
@@ -60,6 +64,7 @@ param logAnalyticsName string = '${apiCenterName}-law'
 
 @description('Resource tags applied to all resources')
 param tags object = {
+  env: 'dev'
   project: 'mcp-registry'
 }
 
@@ -125,6 +130,8 @@ module apimApi 'modules/api-management/apim-api.bicep' = {
     apimName: apimService.outputs.apimName
     apiCenterDataPlaneUrl: apiCenterService.outputs.dataPlaneEndpoint
     openidConfigUrl: '${az.environment().authentication.loginEndpoint}${tenantId}/v2.0/.well-known/openid-configuration'
+    entraTokenIssuer: '${az.environment().authentication.loginEndpoint}${tenantId}/v2.0'
+    readerGroupObjectId: readerGroupPrincipalId
   }
 }
 
