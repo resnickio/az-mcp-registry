@@ -16,8 +16,8 @@ param readerGroupPrincipalId string = ''
 @description('Principal ID of APIM system-assigned managed identity for data plane access')
 param apimPrincipalId string = ''
 
-@description('Principal IDs of admins/pipelines that need Service Contributor access')
-param adminPrincipalIds array = []
+@description('Principal IDs of service principals and pipelines that need Service Contributor access (managed identities and app registrations only, not users)')
+param adminPrincipalIds string[] = []
 
 // Azure API Center Data Reader
 var dataReaderRoleId = 'c7244dfb-f447-457d-b2ba-3999044d1706'
