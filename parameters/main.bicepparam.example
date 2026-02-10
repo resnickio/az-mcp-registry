@@ -1,0 +1,18 @@
+using '../main.bicep'
+
+param apiCenterName = '<your-api-center-name>'
+
+param apiCenterLocation = 'eastus'
+
+param readerGroupPrincipalId = '<entra-security-group-object-id>'
+
+param apimPublisherEmail = '<publisher-email@example.com>'
+
+param apimPublisherName = '<Organization Name>'
+
+param tenantId = '<entra-tenant-id>'
+
+param tags = {
+  env: 'dev'
+  project: 'mcp-registry'
+}
