@@ -4,7 +4,7 @@
 
 @description('API Center service name')
 @minLength(3)
-@maxLength(90)
+@maxLength(45)
 param apiCenterName string
 
 @description('Azure region for API Center')

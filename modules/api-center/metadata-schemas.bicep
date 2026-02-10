@@ -25,7 +25,7 @@ resource securityClassification 'Microsoft.ApiCenter/services/metadataSchemas@20
         deprecated: false
       }
     ]
-    schema: '{"type":"string","title":"security-classification","oneOf":[{"const":"public","description":""},{"const":"internal","description":""},{"const":"confidential","description":""},{"const":"restricted","description":""}]}'
+    schema: '{"type":"string","title":"security-classification","oneOf":[{"const":"public","description":"Data freely available to the public"},{"const":"internal","description":"Internal organizational data"},{"const":"confidential","description":"Sensitive business data requiring specific authorization"},{"const":"restricted","description":"Highly sensitive data requiring explicit approval and auditing"}]}'
   }
 }
 
@@ -42,7 +42,7 @@ resource mcpTransport 'Microsoft.ApiCenter/services/metadataSchemas@2024-03-01' 
         deprecated: false
       }
     ]
-    schema: '{"type":"string","title":"mcp-transport","oneOf":[{"const":"stdio","description":""},{"const":"sse","description":""},{"const":"streamable-http","description":""}]}'
+    schema: '{"type":"string","title":"mcp-transport","oneOf":[{"const":"stdio","description":"Standard I/O transport"},{"const":"sse","description":"Server-Sent Events transport"},{"const":"streamable-http","description":"Streamable HTTP transport"}]}'
   }
 }
 
@@ -59,7 +59,7 @@ resource mcpProtocolVersion 'Microsoft.ApiCenter/services/metadataSchemas@2024-0
         deprecated: false
       }
     ]
-    schema: '{"title":"mcp-protocol-version","type":"string"}'
+    schema: '{"title":"mcp-protocol-version","type":"string","description":"MCP protocol version in date format (e.g. 2025-03-26)","pattern":"^\\\\d{4}-\\\\d{2}-\\\\d{2}$"}'
   }
 }
 
@@ -76,7 +76,7 @@ resource dataClassification 'Microsoft.ApiCenter/services/metadataSchemas@2024-0
         deprecated: false
       }
     ]
-    schema: '{"type":"array","title":"data-classification","items":{"type":"string","oneOf":[{"const":"none","description":""},{"const":"pii","description":""},{"const":"phi","description":""}]}}'
+    schema: '{"type":"array","title":"data-classification","items":{"type":"string","oneOf":[{"const":"none","description":"No sensitive data handled"},{"const":"pii","description":"Personally identifiable information"},{"const":"phi","description":"Protected health information"},{"const":"pci","description":"Payment card industry data"}]}}'
   }
 }
 

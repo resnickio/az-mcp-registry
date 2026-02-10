@@ -30,5 +30,24 @@ resource developmentEnvironment 'Microsoft.ApiCenter/services/workspaces/environ
   }
 }
 
+resource productionEnvironment 'Microsoft.ApiCenter/services/workspaces/environments@2024-03-01' = {
+  name: 'production'
+  parent: defaultWorkspace
+  properties: {
+    title: 'production'
+    description: 'Production environment for MCP server deployments'
+    kind: 'production'
+    onboarding: {
+      developerPortalUri: []
+    }
+    server: {
+      managementPortalUri: []
+    }
+  }
+}
+
 @description('Development environment resource ID')
 output developmentEnvironmentId string = developmentEnvironment.id
+
+@description('Production environment resource ID')
+output productionEnvironmentId string = productionEnvironment.id
