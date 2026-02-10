@@ -6,7 +6,7 @@ This repository deploys an **Azure API Center instance configured as an enterpri
 
 The primary use case is an **enterprise allowlist for GitHub Copilot MCP servers** — starting with low-risk public-information servers (Microsoft Learn, Context7) and scaling to servers that use user credentials (GitHub MCP Server) and custom enterprise MCP servers that require enumeration protection.
 
-**Deployment topology:** Single environment, single region
+**Deployment topology:** Two environments (development + production), single region
 **Auth model:** Entra ID user authentication, gated by security group membership. APIM system-assigned managed identity for backend API Center access.
 **API version pinned to:** `2024-03-01` (GA)
 **SKU:** Free tier
@@ -19,22 +19,21 @@ The primary use case is an **enterprise allowlist for GitHub Copilot MCP servers
 - **Single workspace**: Only `default` workspace is supported. Do not attempt to create additional workspaces.
 - **Deployment Stacks**: Production deploys will use Azure Deployment Stacks with `denyWriteAndDelete` to prevent drift. Never deploy with raw `az deployment group create` in production.
 - **Metadata-driven governance**: Required metadata schemas enforce security classification, MCP transport type, protocol version, data classification, and technical contact at registration time. These are not optional — removing `required: true` breaks the governance model.
-- **Security group gating**: Access to the MCP registry data plane is controlled by membership in an Entra ID security group. Users authenticate with their standard Entra ID account. The group is assigned the Azure API Center Data Reader role on the API Center instance.
+- **Security group gating**: Access to the MCP registry data plane is controlled by membership in an Entra ID security group. Users authenticate with their standard Entra ID account. APIM enforces group membership by requiring the `groups` claim in the JWT (configured via the `validate-jwt` policy). The group is also assigned the Azure API Center Data Reader role on the API Center instance for defense-in-depth.
 - **No diagnostic settings on API Center**: API Center (`microsoft.apicenter/services`) does not support Azure Monitor diagnostic settings. However, the APIM proxy logs all requests to Application Insights, providing the observability that API Center lacks natively. Activity Log and Event Grid remain available for ARM-level audit and registration events.
 
 ## Deployed resources
 
-This deployment creates the following resources. Actual names are derived from the parameter file using the naming convention `{prefix}-{environment}-{resourcetype}`.
+This deployment creates the following resources. Names are derived from `apiCenterName` with conventional suffixes (all overridable).
 
-| Resource | Name Pattern | Notes |
+| Resource | Default Name | Notes |
 |---|---|---|
-| Resource Group | `{prefix}-{env}-rg` | All resources deployed here |
-| API Center | `{prefix}-{env}-mcpr` | May be in a different region than the RG (see note below) |
-| API Management | `{prefix}-{env}-apim` | Developer tier, External VNet mode |
-| Virtual Network | `{prefix}-{env}-vnet` | Contains `snet-apim` subnet for APIM |
-| NSG (APIM subnet) | attached to `snet-apim` | Required inbound rules for APIM health |
-| Application Insights | `{prefix}-{env}-appi` | APIM request logging |
-| Log Analytics Workspace | `{prefix}-{env}-law` | May be in the RG region if different from APIM region |
+| API Center | `{apiCenterName}` | May be in a different region than the RG (see note below) |
+| API Management | `{apiCenterName}-apim` | Developer tier, External VNet mode |
+| Virtual Network | `{apiCenterName}-vnet` | Contains `snet-apim` subnet for APIM |
+| NSG (APIM subnet) | `{vnetName}-nsg-apim` | Required inbound/outbound rules for APIM health |
+| Application Insights | `{apiCenterName}-appi` | APIM request logging |
+| Log Analytics Workspace | `{apiCenterName}-law` | May be in the RG region if different from APIM region |
 | Entra ID Security Group | (configured in parameters) | Controls end-user access to MCP registry |
 
 **Note:** API Center is only available in a subset of Azure regions (Australia East, Canada Central, Central India, East US, France Central, Sweden Central, UK South, West Europe). If your resource group region is not in this list, API Center (and co-located resources like APIM) must be deployed to a supported region. The parameter file controls the API Center location separately.
@@ -63,11 +62,12 @@ This deployment creates the following resources. Actual names are derived from t
 │   │   ├── vnet.bicep                 # VNet + snet-apim subnet + NSG
 │   │   └── policies/
 │   │       └── mcp-registry-proxy.xml # APIM policy (JWT, rate limit, MI auth, backend routing)
-│   ├── identity/
-│   │   └── role-assignments.bicep     # RBAC: Data Reader for consumers, Contributor for admins
-│   └── monitoring/                    # Reserved for future use (Event Grid)
+│   └── identity/
+│       └── role-assignments.bicep     # RBAC: Data Reader for consumers, Contributor for admins
 ├── parameters/
 │   └── main.bicepparam.example        # Example parameter values (copy and customize)
+├── scripts/
+│   └── post-deploy.sh                 # Post-deployment: disable anonymous access
 ├── architecture.md                    # Architecture narrative + Mermaid diagrams
 ├── runbook.md                         # Operational runbook
 └── .github/workflows/
@@ -79,17 +79,15 @@ This deployment creates the following resources. Actual names are derived from t
 
 ### Naming
 
-Resource names follow the pattern: `{prefix}-{environment}-{resourcetype}` where `{prefix}` is set in the parameter file.
+Resource names are derived from the `apiCenterName` parameter with conventional suffixes. All names are overridable via parameters in `main.bicep`.
 
-| Abbreviation | Resource Type |
-|---|---|
-| `rg` | Resource Group |
-| `mcpr` | API Center (MCP Registry) |
-| `apim` | API Management |
-| `vnet` | Virtual Network |
-| `appi` | Application Insights |
-| `law` | Log Analytics Workspace |
-| `mid` | Managed Identity |
+| Resource | Default Name | Parameter |
+|---|---|---|
+| API Center | `{apiCenterName}` | `apiCenterName` (required) |
+| API Management | `{apiCenterName}-apim` | `apimName` |
+| Virtual Network | `{apiCenterName}-vnet` | `vnetName` |
+| Application Insights | `{apiCenterName}-appi` | `appInsightsName` |
+| Log Analytics Workspace | `{apiCenterName}-law` | `logAnalyticsName` |
 
 ### Tags
 
@@ -100,7 +98,7 @@ All resources are tagged with:
 ### Bicep
 
 - **API version**: All `Microsoft.ApiCenter` resources use `2024-03-01`. Do not upgrade to preview versions without explicit approval — `2024-06-01-preview` adds `apiSources` but changes behavior.
-- **Naming**: Resource names must match `^[a-zA-Z0-9-]{3,90}$`. Use kebab-case.
+- **Naming**: Resource names must match `^[a-zA-Z0-9-]{3,90}$`. Use kebab-case. `apiCenterName` is limited to 45 chars so derived names (e.g. `{name}-apim`) stay within Azure resource name limits.
 - **Parameters**: Use `.bicepparam` files, not JSON. Secrets go in Key Vault and are referenced via `getSecret()`.
 - **Identity**: Always set `principalType: 'ServicePrincipal'` on role assignments for managed identities. Set `principalType: 'Group'` for security groups. Omitting `principalType` causes 48-hour Microsoft Graph resolution delays.
 - **Role assignment names**: Always use `guid(scope, principalId, roleDefinitionId)` for deterministic idempotent names.
@@ -116,7 +114,7 @@ Five required metadata schemas are deployed, all assigned to the `api` entity:
 | security-classification | `securityclassification` | string (enum) | `public`, `internal`, `confidential`, `restricted` |
 | mcp-transport | `mcptransport` | string (enum) | `stdio`, `sse`, `streamable-http` |
 | mcp-protocol-version | `mcpprotocolversion` | string (free text) | e.g. `2025-03-26` |
-| data-classification | `dataclassification` | array of strings (multi-select) | `none`, `pii`, `phi` |
+| data-classification | `dataclassification` | array of strings (multi-select) | `none`, `pii`, `phi`, `pci` |
 | technical-contact | `technicalcontact` | string (free text) | email or team name |
 
 - Schema values are **stringified JSON Schema** in the `properties.schema` field.

@@ -92,7 +92,7 @@ graph TB
         APIC[API Center Service<br/>backend, not client-facing]
         WS[Default Workspace]
         META[Metadata Schemas<br/>governance enforcement]
-        ENV[Environments<br/>development]
+        ENV[Environments<br/>development + production]
 
         APIC --> WS
         WS --> META
@@ -116,7 +116,7 @@ graph TB
     AIF -->|"1. Discover servers<br/>(Entra ID token)"| APIM
     CA -->|"1. Discover servers<br/>(managed identity token)"| APIM
 
-    APIM -->|"Validate JWT, rate limit<br/>then forward with MI token"| APIC
+    APIM -->|"Validate JWT + group claim,<br/>rate limit, forward with MI token"| APIC
 
     SG -->|"Members authenticate<br/>via Entra ID"| APIM
     EID -->|"Bearer token"| APIM
@@ -136,7 +136,7 @@ graph TB
 
 | Capability | Simplified (direct) | Full (APIM proxy) |
 |---|---|---|
-| Authentication | User JWT validated by API Center | User JWT validated by APIM, MI token used for backend |
+| Authentication | User JWT validated by API Center | User JWT validated by APIM (including `groups` claim for security group membership), MI token used for backend |
 | Rate limiting | None (undocumented platform limits only) | 60 req/min per user OID |
 | Request logging | None (API Center has no diagnostic settings) | All requests logged to Application Insights with user OID |
 | VNet integration | None (API Center has no network controls) | APIM in dedicated subnet with NSG |
@@ -165,7 +165,7 @@ sequenceDiagram
 
     Dev->>APIM: GET /workspaces/default/v0.1/servers<br/>Authorization: Bearer {user JWT}
 
-    APIM->>APIM: validate-jwt: verify signature,<br/>check aud=https://azure-apicenter.net,<br/>require oid claim
+    APIM->>APIM: validate-jwt: verify signature,<br/>check aud + issuer + oid claim,<br/>require groups claim (security group)
 
     APIM->>APIM: rate-limit-by-key:<br/>check 60 req/min for this OID
 

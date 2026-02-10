@@ -32,6 +32,10 @@ git clone <repo-url> && cd az-mcp-registry
 export AZURE_SUBSCRIPTION_ID="<your-subscription-id>"
 export AZURE_RESOURCE_GROUP="<your-resource-group>"
 
+# Create the resource group (if it doesn't exist)
+# Note: The RG region can differ from the API Center region
+az group create --name $AZURE_RESOURCE_GROUP --location <your-rg-region>
+
 # Copy the parameter template and fill in your values
 cp parameters/main.bicepparam.example parameters/main.bicepparam
 # Edit parameters/main.bicepparam with your values
@@ -52,8 +56,9 @@ az stack group create \
   --deny-settings-mode denyWriteAndDelete
 
 # Post-deployment: disable anonymous access (not configurable via Bicep)
+export API_CENTER_NAME="<your-api-center-name>"  # Must match apiCenterName in your parameter file
 az rest --method patch \
-  --url "https://management.azure.com/subscriptions/$AZURE_SUBSCRIPTION_ID/resourceGroups/$AZURE_RESOURCE_GROUP/providers/Microsoft.ApiCenter/services/<api-center-name>?api-version=2024-03-01" \
+  --url "https://management.azure.com/subscriptions/$AZURE_SUBSCRIPTION_ID/resourceGroups/$AZURE_RESOURCE_GROUP/providers/Microsoft.ApiCenter/services/$API_CENTER_NAME?api-version=2024-03-01" \
   --body '{"properties":{"anonymousAccess":"disabled"}}'
 ```
 
@@ -79,7 +84,7 @@ User (Entra ID corporate account)
             → APIM returns response to user (logged to Application Insights)
 ```
 
-This is a **hybrid auth pattern**: the user's JWT is validated by APIM for identity extraction (rate limiting by OID, logging), but the actual backend call to API Center uses APIM's managed identity. APIM currently validates that the caller has a valid Entra ID token with an `oid` claim. The security group `sg-mcp-registry-readers` retains the Data Reader role for direct API Center access scenarios.
+This is a **hybrid auth pattern**: the user's JWT is validated by APIM for identity and group membership (rate limiting by OID, logging), and the backend call to API Center uses APIM's managed identity. APIM enforces that the caller has a valid Entra ID token with an `oid` claim and belongs to the configured security group (via the `groups` claim). The security group also retains the Data Reader role for direct API Center access scenarios.
 
 **Known limitation:** The Azure CLI (`az account get-access-token --resource https://azure-apicenter.net`) does not work for data plane access due to a Microsoft first-party app preauthorization gap (`AADSTS65002`). End-user clients (VS Code, GitHub Copilot) use different app registrations and are not affected.
 
@@ -108,11 +113,12 @@ This is a **hybrid auth pattern**: the user's JWT is validated by APIM for ident
 │   │   ├── vnet.bicep                 # VNet + snet-apim subnet + NSG
 │   │   └── policies/
 │   │       └── mcp-registry-proxy.xml # APIM policy (JWT, rate limit, MI auth, backend routing)
-│   ├── identity/
-│   │   └── role-assignments.bicep     # RBAC bindings
-│   └── monitoring/                    # Reserved for future use (Event Grid)
+│   └── identity/
+│       └── role-assignments.bicep     # RBAC bindings
 ├── parameters/
 │   └── main.bicepparam.example        # Parameter template — copy and fill in your values
+├── scripts/
+│   └── post-deploy.sh                 # Post-deployment: disable anonymous access
 └── .github/workflows/
     ├── bicep-validate.yml             # PR: lint → validate → what-if
     └── bicep-deploy.yml               # Merge: Deployment Stack deploy
@@ -123,7 +129,7 @@ This is a **hybrid auth pattern**: the user's JWT is validated by APIM for ident
 1. **API version `2024-03-01` (GA)** — pinned for stability. Preview features (`apiSources`) not used.
 2. **Deployment Stacks with `denyWriteAndDelete`** — prevents drift and unauthorized modifications.
 3. **APIM proxy for logging, rate limiting, and VNet** — API Center lacks diagnostic settings and network controls. APIM (Developer tier, External VNet mode) provides per-user rate limiting (60 req/min by user OID), request logging to Application Insights, and VNet presence. MCP clients call the APIM gateway, which forwards to the API Center backend using its own managed identity.
-4. **Entra ID security group gating** — users authenticate with corporate accounts; access controlled by group membership, not individual assignments.
+4. **Entra ID security group gating** — users authenticate with corporate accounts; APIM enforces security group membership via the `groups` claim in JWT validation. Access controlled by group membership, not individual assignments.
 5. **Required metadata schemas** — governance enforced at registration time, not after.
 6. **No private endpoints on API Center** — API Center does not support private endpoints. APIM in External VNet mode provides VNet integration, but the APIM-to-API-Center backend call is still public.
 7. **Observability via APIM + Application Insights** — API Center does not support Azure Monitor diagnostic settings, but APIM logs all proxied requests to Application Insights, providing full request/response telemetry.

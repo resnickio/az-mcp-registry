@@ -1,0 +1,57 @@
+name: Bicep Deploy
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '**.bicep'
+      - 'bicepconfig.json'
+      - 'parameters/**.example'
+
+permissions:
+  id-token: write
+  contents: read
+
+env:
+  AZURE_RESOURCE_GROUP: ${{ vars.AZURE_RESOURCE_GROUP }}
+  BICEP_VERSION: '0.32.4'
+
+jobs:
+  deploy:
+    name: Deploy via Deployment Stack
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install Bicep CLI
+        run: |
+          az bicep install --version v${{ env.BICEP_VERSION }}
+          az bicep version
+
+      - name: Azure Login (OIDC)
+        uses: azure/login@v2
+        with:
+          client-id: ${{ vars.AZURE_CLIENT_ID }}
+          tenant-id: ${{ vars.AZURE_TENANT_ID }}
+          subscription-id: ${{ vars.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Lint
+        run: az bicep lint --file main.bicep
+
+      - name: Deploy Deployment Stack
+        run: |
+          az stack group create \
+            --name mcp-registry-stack \
+            --resource-group ${{ env.AZURE_RESOURCE_GROUP }} \
+            --template-file main.bicep \
+            --parameters parameters/main.bicepparam \
+            --action-on-unmanage deleteResources \
+            --deny-settings-mode denyWriteAndDelete \
+            --yes
+
+      - name: Post-deploy — Disable anonymous access
+        run: |
+          chmod +x scripts/post-deploy.sh
+          ./scripts/post-deploy.sh

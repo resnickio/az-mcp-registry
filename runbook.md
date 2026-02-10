@@ -155,11 +155,11 @@ APIM_PRINCIPAL=$(az apim show --name $APIM_NAME --resource-group $AZURE_RESOURCE
 echo "APIM MI principal: $APIM_PRINCIPAL"
 
 # 3. Test the APIM gateway (requires a valid Entra token)
-TOKEN=$(az account get-access-token --resource https://azure-apicenter.net --query accessToken -o tsv)
-curl -s -o /dev/null -w "%{http_code}" \
-  -H "Authorization: Bearer $TOKEN" \
-  "$APIM_GATEWAY_URL/workspaces/default/v0.1/servers"
-# Expected: 200
+# NOTE: `az account get-access-token --resource https://azure-apicenter.net` does NOT work
+# due to a Microsoft first-party app preauthorization gap (AADSTS65002).
+# Use VS Code or GitHub Copilot to test end-to-end, or use a custom app registration
+# with client credentials flow for CLI-based testing.
+# See the Troubleshooting section for details on the AADSTS65002 error.
 
 # 4. Check Application Insights for recent requests
 # Use the Azure Portal → Application Insights → your Application Insights instance → Logs
