@@ -84,7 +84,7 @@ graph TB
 
     subgraph "APIM Proxy Layer"
         APIM[API Management<br/>Developer tier, External VNet]
-        VNET[VNet: {name}-vnet<br/>Subnet: snet-apim 10.0.0.0/24]
+        VNET["VNet: name-vnet<br/>Subnet: snet-apim 10.0.0.0/24"]
         APIM --- VNET
     end
 
